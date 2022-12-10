@@ -3,4 +3,4 @@ project(cpp8v)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(main.cpp SparseMatrix.cpp SparseMatrix.h)
+add_executable(main.cpp SparseMatrix.h SquareSparseMatrix.h)
