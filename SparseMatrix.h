@@ -3,6 +3,10 @@
 
 #include <iostream>
 #include <map>
+#include <cmath>
+#include <random>
+
+
 
 
 template<class T>
@@ -10,9 +14,31 @@ class SparseMatrix
 {
     size_t _rows;
     size_t _columns;
-    std::map<std::pair<size_t, size_t>, T> _elements;
+    std::map<size_t, std::map<size_t, T>> _elements;
 public:
-    SparseMatrix(size_t rows, size_t columns);
+    SparseMatrix(size_t rows, size_t columns): _rows(rows), _columns(columns) {
+        this->_elements = {};
+        for (size_t i = 0; i < this->_rows; i++) {
+            for (size_t j = 0; j < this->_columns; j++) {
+                T f = (T)std::rand() % 11;
+                if (f == 0)
+                    continue;
+                this->_elements[i][j] = f;
+            }
+        }
+    }
+
+    size_t getRows() const {
+        return this->_rows;
+    }
+
+    size_t getColumns() const {
+        return this->_columns;
+    }
+
+    const std::map<size_t, std::map<size_t, T>> & getElements() {
+        return this->_elements;
+    }
     // методы для доступа к матрице
     const T& at(size_t row, size_t column) const;
     T& at(size_t row, size_t column);
