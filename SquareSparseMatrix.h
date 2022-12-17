@@ -1,6 +1,7 @@
 #ifndef CPP8V_SQUARESPARSEMATRIX_H
 #define CPP8V_SQUARESPARSEMATRIX_H
 #include "SparseMatrix.h"
+#include<cmath>
 
 template<class T>
 void printSparseMatrix(std::map<size_t, std::map<size_t, T>> elements) {
@@ -82,6 +83,65 @@ public:
         }
 
         return result;
+    }
+
+    std::map<size_t, std::map<size_t, double>> InvertibleMatrix() {
+
+        double determinant = calculateDeterminant();
+        if (determinant = 0) {
+            //Irreversible matrix
+        }
+
+        std::map<size_t, std::map<size_t, double>> copiedElements = {};
+
+        auto elements = this->getElements();
+        for (size_t rowIndex = 0; rowIndex < this->getOrder(); rowIndex++) {
+            copiedElements[rowIndex] = {};
+            for (size_t columnIndex = 0; columnIndex < this->getOrder(); columnIndex++) {
+                if (elements[rowIndex].find(columnIndex) == elements[rowIndex].end()) {
+                    copiedElements[rowIndex][columnIndex] = 0;
+                }
+                else {
+                    copiedElements[rowIndex][columnIndex] = (double) elements[rowIndex][columnIndex];
+                }
+            }
+        }
+
+        // searching Matrix Of Algebraic Additions
+        std::map<size_t, std::map<size_t, double>> MatrixOfAlgebraicAdditions = {};
+        std::map<size_t, std::map<size_t, double>> Minor = {};
+
+        for (size_t i = 0; i < this->getOrder(); i++) {
+            for (size_t j = 0; j < this->getOrder(); j++) {
+                Minor = copiedElements;
+                for (size_t k = 0; k < this->getOrder(); k++) {
+                    Minor[k].erase(j);
+                }
+                Minor.erase(i);
+                MatrixOfAlgebraicAdditions[i][j] = pow(-1,i+j)*(Minor.calculateDeterminant());
+            }
+        }
+        //transposition
+        for (size_t i = 0; i < this->getOrder(); i++) {
+            for (size_t j = 0; j < this->getOrder(); j++) {
+                std::swap(MatrixOfAlgebraicAdditions[i][j], MatrixOfAlgebraicAdditions[j][i]);
+            }
+        }
+
+
+        //last step
+        for (size_t i = 0; i < this->getOrder(); i++) {
+            for (size_t j = 0; j < this->getOrder(); j++) {
+                MatrixOfAlgebraicAdditions[i][j] *= 1 / determinant;
+            }
+        }
+
+        return MatrixOfAlgebraicAdditions;
+
+
+
+
+
     }
 };
 
