@@ -149,6 +149,26 @@ public:
 
 
     }
+
+    friend SquareSparseMatrix operator*(SquareSparseMatrix A, SquareSparseMatrix B ) {
+        if (A->getOrder() != B->getOrder()) {
+            throw std::invalid_argument("Orders of A and B aren't equal");
+        }
+        B = B.InvertibleMatrix();
+        SquareSparseMatrix C = {};
+        for (size_t rowIndex = 0; rowIndex < A->getOrder(); rowIndex++) {
+            C[rowIndex] = {};
+        }
+        for (size_t i = 0; i < A->getOrder(); i++) {
+            for (size_t j = 0; j < A->getOrder(); j++) {
+                for (size_t k = 0; k < A->getOrder(); k++) {
+                    C[i][j] = A[i][k]*B[k][j];
+                }
+            }
+        }
+        return C;
+
+    }
 };
 
 
