@@ -2,6 +2,7 @@
 #define CPP8V_SQUARESPARSEMATRIX_H
 #include "SparseMatrix.h"
 #include<cmath>
+#include<exception>
 
 template<class T>
 void printSparseMatrix(std::map<size_t, std::map<size_t, T>> elements) {
@@ -20,6 +21,7 @@ template<class T>
 class SquareSparseMatrix: public SparseMatrix<T>{
 public:
     SquareSparseMatrix(size_t n): SparseMatrix<T>(n, n){};
+
 
     size_t getOrder() const {
         return this->getRows();
@@ -89,7 +91,7 @@ public:
 
         double determinant = calculateDeterminant();
         if (determinant = 0) {
-            //Irreversible matrix
+            throw std::invalid_argument{"Irreversible matrix"};
         }
 
         std::map<size_t, std::map<size_t, double>> copiedElements = {};
@@ -118,13 +120,17 @@ public:
                     Minor[k].erase(j);
                 }
                 Minor.erase(i);
-                MatrixOfAlgebraicAdditions[i][j] = pow(-1,i+j)*(Minor.calculateDeterminant());
+                //MatrixOfAlgebraicAdditions[i][j] = std::pow(-1,i+j)*(Minor.calculateDeterminant());
             }
         }
         //transposition
+        std::map<size_t, std::map<size_t, double>> TransposedMatrix = {};
+        for (size_t rowIndex = 0; rowIndex < this->getOrder(); rowIndex++) {
+            TransposedMatrix[rowIndex] = {};
+        }
         for (size_t i = 0; i < this->getOrder(); i++) {
             for (size_t j = 0; j < this->getOrder(); j++) {
-                std::swap(MatrixOfAlgebraicAdditions[i][j], MatrixOfAlgebraicAdditions[j][i]);
+                TransposedMatrix[i][j] = MatrixOfAlgebraicAdditions[j][i];
             }
         }
 
