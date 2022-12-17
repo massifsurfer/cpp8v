@@ -5,7 +5,7 @@
 #include<exception>
 
 template<class T>
-void printSparseMatrix(std::map<size_t, std::map<size_t, T>> elements) {
+void printSparseMatrix(const std::map<size_t, std::map<size_t, T>> & elements) {
 
     for (auto row : elements) {
         for (auto el : row.second) {
@@ -27,7 +27,6 @@ public:
         }
     }
 
-
     size_t getOrder() const {
         return this->getRows();
     }
@@ -36,68 +35,10 @@ public:
         return this->auxCalculateDeterminant(this->getElements());
     }
 
-    std::map<size_t, std::map<size_t, double>> InvertibleMatrix() {
-
-        double determinant = calculateDeterminant();
-        if (determinant = 0) {
-            throw std::invalid_argument{"Irreversible matrix"};
-        }
-
-        std::map<size_t, std::map<size_t, double>> copiedElements = {};
-
-        auto elements = this->getElements();
-        for (size_t rowIndex = 0; rowIndex < this->getOrder(); rowIndex++) {
-            copiedElements[rowIndex] = {};
-            for (size_t columnIndex = 0; columnIndex < this->getOrder(); columnIndex++) {
-                if (elements[rowIndex].find(columnIndex) == elements[rowIndex].end()) {
-                    copiedElements[rowIndex][columnIndex] = 0;
-                }
-                else {
-                    copiedElements[rowIndex][columnIndex] = (double) elements[rowIndex][columnIndex];
-                }
-            }
-        }
-
-        // searching Matrix Of Algebraic Additions
-        std::map<size_t, std::map<size_t, double>> MatrixOfAlgebraicAdditions = {};
-        std::map<size_t, std::map<size_t, double>> Minor = {};
-
-        for (size_t i = 0; i < this->getOrder(); i++) {
-            for (size_t j = 0; j < this->getOrder(); j++) {
-                Minor = copiedElements;
-                for (size_t k = 0; k < this->getOrder(); k++) {
-                    Minor[k].erase(j);
-                }
-                Minor.erase(i);
-                //MatrixOfAlgebraicAdditions[i][j] = std::pow(-1,i+j)*(Minor.calculateDeterminant());
-            }
-        }
-        //transposition
-        std::map<size_t, std::map<size_t, double>> TransposedMatrix = {};
-        for (size_t rowIndex = 0; rowIndex < this->getOrder(); rowIndex++) {
-            TransposedMatrix[rowIndex] = {};
-        }
-        for (size_t i = 0; i < this->getOrder(); i++) {
-            for (size_t j = 0; j < this->getOrder(); j++) {
-                TransposedMatrix[i][j] = MatrixOfAlgebraicAdditions[j][i];
-            }
-        }
-
-
-        //last step
-        for (size_t i = 0; i < this->getOrder(); i++) {
-            for (size_t j = 0; j < this->getOrder(); j++) {
-                MatrixOfAlgebraicAdditions[i][j] *= 1 / determinant;
-            }
-        }
-
-        return MatrixOfAlgebraicAdditions;
-
-
-
-
-
+    SquareSparseMatrix<double> invertibleMatrix() {
+        return SquareSparseMatrix<double>(auxInvertibleMatrix(this->getElements()));;
     }
+
 
     friend SquareSparseMatrix operator*(SquareSparseMatrix A, SquareSparseMatrix B ) {
         if (A->getOrder() != B->getOrder()) {
@@ -118,7 +59,96 @@ public:
         return C;
 
     }
+
+
+
 private:
+    // This method is only used with dictionaries, not matrix objects!
+    static std::map<size_t, std::map<size_t, double>> auxInvertibleMatrix(const std::map<size_t, std::map<size_t, T>> & matrixElements) {
+
+        // Check if it worth it
+        double determinant = auxCalculateDeterminant(matrixElements);
+        if (determinant == 0) {
+            throw std::invalid_argument{"Irreversible matrix"};
+        }
+
+        // Create a copy of the matrix, but with double instead of T type
+        std::map<size_t, std::map<size_t, double>> copiedElements = {};
+
+        size_t rowsCount = matrixElements.size();
+        size_t columnsCount = 0;
+        for (auto row : matrixElements) {
+            columnsCount = std::max(row.second.size(), columnsCount);
+        }
+
+        if (rowsCount != columnsCount) {
+            throw std::invalid_argument("The matrix isn't square!");
+        }
+        size_t order = rowsCount;
+
+        for (size_t rowIndex = 0; rowIndex < order; rowIndex++) {
+            copiedElements[rowIndex] = {};
+            for (size_t columnIndex = 0; columnIndex < order; columnIndex++) {
+                if (matrixElements.at(rowIndex).find(columnIndex) == matrixElements.at(rowIndex).end()) {
+                    copiedElements[rowIndex][columnIndex] = 0;
+                }
+                else {
+                    copiedElements[rowIndex][columnIndex] = (double) matrixElements.at(rowIndex).at(columnIndex);
+                }
+            }
+        }
+        // calculating Matrix Of Algebraic Additions
+        std::map<size_t, std::map<size_t, double>> matrixOfAlgebraicAdditions = {};
+        for (size_t excludedRow = 0; excludedRow < order; excludedRow++) {
+            matrixOfAlgebraicAdditions[excludedRow] = {};
+            for (size_t excludedColumn = 0; excludedColumn < order; excludedColumn++) {
+                std::map<size_t, std::map<size_t, T>> minor = {};
+                size_t i = 0, j = 0;
+                while (i < order) {
+                    // Skip excluded row
+                    if (i != excludedRow) {
+                        if (i >  excludedRow) {
+                            minor[i - 1] = {};
+                        } else {
+                            minor[i] = {};
+                        }
+                        j = 0;
+                        while (j < order) {
+                            // Skip excluded column and consider this fact in minor's indexing
+                            if (i < excludedRow && j < excludedColumn) {
+                                minor[i][j] = copiedElements[i][j];
+                            }
+                            else if (i > excludedRow && j < excludedColumn) {
+                                minor[i - 1][j] = copiedElements[i][j];
+                            }
+                            else if(i < excludedRow && j > excludedColumn) {
+                                minor[i][j - 1] = copiedElements[i][j];
+                            }
+                            else if(i > excludedRow && j > excludedColumn) {
+                                minor[i - 1][j - 1] = copiedElements[i][j];
+                            }
+                            j++;
+                        }
+                    }
+                    i++;
+                }
+                matrixOfAlgebraicAdditions[excludedRow][excludedColumn] = auxCalculateDeterminant(minor);
+            }
+        }
+
+        // transposition
+        std::map<size_t, std::map<size_t, double>> TransposedMatrix = {};
+        for (size_t rowIndex = 0; rowIndex < order; rowIndex++) {
+            TransposedMatrix[rowIndex] = {};
+        }
+        for (size_t i = 0; i < order; i++) {
+            for (size_t j = 0; j < order; j++) {
+                TransposedMatrix[i][j] = matrixOfAlgebraicAdditions[j][i] / determinant;
+            }
+        }
+        return TransposedMatrix;
+    }
+
     static double auxCalculateDeterminant(const std::map<size_t, std::map<size_t, T>> & matrixElements) {
         // Create a copy of the matrix, but with double instead of T type
         std::map<size_t, std::map<size_t, double>> copiedElements = {};
@@ -188,6 +218,8 @@ private:
 
         return result;
     }
+
+
 };
 
 

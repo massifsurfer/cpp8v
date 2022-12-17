@@ -13,15 +13,18 @@
 template<class T>
 class SparseMatrix
 {
-    size_t _rows;
-    size_t _columns;
+    size_t _rows{};
+    size_t _columns{};
     std::map<size_t, std::map<size_t, T>> _elements;
 public:
     SparseMatrix(size_t rows, size_t columns): _rows(rows), _columns(columns) {
         this->_elements = {};
         for (size_t i = 0; i < this->_rows; i++) {
             for (size_t j = 0; j < this->_columns; j++) {
-                T f = (T)std::rand() % 11;
+
+                double r = (double)rand() / (double)RAND_MAX;
+
+                T f = (T) 10 + r * (10 - 0);
                 if (f == 0)
                     continue;
                 this->_elements[i][j] = f;
@@ -33,7 +36,7 @@ public:
         size_t rowsCount = elements.size();
         size_t columnsCount = 0;
         for (auto row : elements) {
-            columnsCount = std::max(row.size(), columnsCount);
+            columnsCount = std::max(row.second.size(), columnsCount);
         }
         this->_rows = rowsCount;
         this->_columns = columnsCount;
@@ -48,7 +51,7 @@ public:
         return this->_columns;
     }
 
-    const std::map<size_t, std::map<size_t, T>> & getElements() {
+    std::map<size_t, std::map<size_t, T>> & getElements() {
         return this->_elements;
     }
     // методы для доступа к матрице
