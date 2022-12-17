@@ -3,13 +3,20 @@
 
 int main() {
 
-    SquareSparseMatrix<int> A(4);
-    for (auto row : A.getElements()) {
-        for (auto el : row.second) {
-            std::cout << el.second << " ";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << A.calculateDeterminant();
+    std::map<size_t, std::map<size_t, double>> A = {};
+    A[0][0] = 1;
+    A[0][1] = 1;
+    A[1][0] = 1;
+    A[1][1] = 1;
+
+    std::map<size_t, std::map<size_t, double>> B = A;
+
+    B = A;
+    B[0][0] = -1;
+
+    printSparseMatrix(B);
+
+    printSparseMatrix(A);
+
     return 0;
 }

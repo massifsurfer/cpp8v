@@ -5,6 +5,7 @@
 #include <map>
 #include <cmath>
 #include <random>
+#include <exception>
 
 
 
@@ -26,6 +27,17 @@ public:
                 this->_elements[i][j] = f;
             }
         }
+    }
+
+    SparseMatrix(const std::map<size_t, std::map<size_t, T>> & elements) {
+        size_t rowsCount = elements.size();
+        size_t columnsCount = 0;
+        for (auto row : elements) {
+            columnsCount = std::max(row.size(), columnsCount);
+        }
+        this->_rows = rowsCount;
+        this->_columns = columnsCount;
+        this->_elements = elements;
     }
 
     size_t getRows() const {

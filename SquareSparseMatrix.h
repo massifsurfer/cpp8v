@@ -20,75 +20,24 @@ template<class T>
 class SquareSparseMatrix: public SparseMatrix<T>{
 public:
     SquareSparseMatrix(size_t n): SparseMatrix<T>(n, n){};
+    SquareSparseMatrix(const std::map<size_t, std::map<size_t, T>> & elements): SparseMatrix<T>(elements) {
+        if (this->getRows() != this->getColumns()) {
+            throw std::invalid_argument("Only square matrix are acceptable");
+        }
+    }
 
     size_t getOrder() const {
         return this->getRows();
     }
 
     double calculateDeterminant() {
-        // Create a copy of the matrix, but with double instead of T type
-        std::map<size_t, std::map<size_t, double>> copiedElements = {};
-
-        auto elements = this->getElements();
-        for (size_t rowIndex = 0; rowIndex < this->getOrder(); rowIndex++) {
-            copiedElements[rowIndex] = {};
-            for (size_t columnIndex = 0; columnIndex < this->getOrder(); columnIndex++) {
-                if (elements[rowIndex].find(columnIndex) == elements[rowIndex].end()) {
-                    copiedElements[rowIndex][columnIndex] = 0;
-                }
-                else {
-                    copiedElements[rowIndex][columnIndex] = (double) elements[rowIndex][columnIndex];
-                }
-            }
-        }
-
-
-        double result = 1;
-        // Iterate over all the rows for first step of Gaussian algorithm
-        for (size_t i = 0; i < this->getOrder() - 1; i++) {
-
-            // In this part we seek for a string with a non-zero first element. If there is a zero column, then the
-            // determinant equals zero
-            size_t nonzeroIndex = i;
-
-            // If the pivot in the current row equals zero then start seeking for non-zero lower in the same column
-            if (std::abs(copiedElements[nonzeroIndex][i]) < EPS) {
-
-                nonzeroIndex++;
-                while (nonzeroIndex < this->getOrder()) {
-                    if (std::abs(copiedElements[nonzeroIndex][i]) > EPS) {
-                        std::swap(copiedElements[i], copiedElements[nonzeroIndex]);
-                        result *= -1;
-                        break;
-                    }
-                    nonzeroIndex++;
-                    if (nonzeroIndex == this->getOrder())
-                        return 0;
-                }
-            }
-
-            // Cycle for iterating over bottom rows, rows below i
-            for (size_t j = i + 1; j < this->getOrder(); j++) {
-                // Cycle for iterating over non-zero elements in a bottom row
-                double multiplier = - copiedElements[j][i] / copiedElements[i][i];
-                for (size_t k = i; k < this->getOrder(); k++) {
-                    copiedElements[j][k] += copiedElements[i][k] * multiplier;
-                }
-            }
-        }
-
-        // Finally multiply diagonal elements
-        for (size_t i = 0; i < this->getOrder(); i++) {
-            result *= copiedElements[i][i];
-        }
-
-        return result;
+        return this->auxCalculateDeterminant(this->getElements());
     }
 
     std::map<size_t, std::map<size_t, double>> InvertibleMatrix() {
 
         double determinant = calculateDeterminant();
-        if (determinant = 0) {
+        if (determinant == 0) {
             //Irreversible matrix
         }
 
@@ -118,14 +67,9 @@ public:
                     Minor[k].erase(j);
                 }
                 Minor.erase(i);
-                MatrixOfAlgebraicAdditions[i][j] = pow(-1,i+j)*(Minor.calculateDeterminant());
+                MatrixOfAlgebraicAdditions[i][j] = pow(-1,i+j)*(auxCalculateDeterminant(Minor));
             }
-        }
-        //transposition
-        for (size_t i = 0; i < this->getOrder(); i++) {
-            for (size_t j = 0; j < this->getOrder(); j++) {
-                std::swap(MatrixOfAlgebraicAdditions[i][j], MatrixOfAlgebraicAdditions[j][i]);
-            }
+            printSparseMatrix(Minor);
         }
 
 
@@ -135,14 +79,80 @@ public:
                 MatrixOfAlgebraicAdditions[i][j] *= 1 / determinant;
             }
         }
-
         return MatrixOfAlgebraicAdditions;
-
-
-
-
-
     }
+
+private:
+    static double auxCalculateDeterminant(const std::map<size_t, std::map<size_t, T>> & matrixElements) {
+        // Create a copy of the matrix, but with double instead of T type
+        std::map<size_t, std::map<size_t, double>> copiedElements = {};
+
+        size_t rowsCount = matrixElements.size();
+        size_t columnsCount = 0;
+        for (auto row : matrixElements) {
+            columnsCount = std::max(row.second.size(), columnsCount);
+        }
+
+        if (rowsCount != columnsCount) {
+            throw std::invalid_argument("The matrix isn't square!");
+        }
+        size_t order = rowsCount;
+
+        for (size_t rowIndex = 0; rowIndex < order; rowIndex++) {
+            copiedElements[rowIndex] = {};
+            for (size_t columnIndex = 0; columnIndex < order; columnIndex++) {
+                if (matrixElements.at(rowIndex).find(columnIndex) == matrixElements.at(rowIndex).end()) {
+                    copiedElements[rowIndex][columnIndex] = 0;
+                }
+                else {
+                    copiedElements[rowIndex][columnIndex] = (double) matrixElements.at(rowIndex).at(columnIndex);
+                }
+            }
+        }
+
+
+        double result = 1;
+        // Iterate over all the rows for first step of Gaussian algorithm
+        for (size_t i = 0; i < order - 1; i++) {
+
+            // In this part we seek for a string with a non-zero first element. If there is a zero column, then the
+            // determinant equals zero
+            size_t nonzeroIndex = i;
+
+            // If the pivot in the current row equals zero then start seeking for non-zero lower in the same column
+            if (std::abs(copiedElements[nonzeroIndex][i]) < EPS) {
+
+                nonzeroIndex++;
+                while (nonzeroIndex < order) {
+                    if (std::abs(copiedElements[nonzeroIndex][i]) > EPS) {
+                        std::swap(copiedElements[i], copiedElements[nonzeroIndex]);
+                        result *= -1;
+                        break;
+                    }
+                    nonzeroIndex++;
+                    if (nonzeroIndex == order)
+                        return 0;
+                }
+            }
+
+            // Cycle for iterating over bottom rows, rows below i
+            for (size_t j = i + 1; j < order; j++) {
+                // Cycle for iterating over non-zero elements in a bottom row
+                double multiplier = - copiedElements[j][i] / copiedElements[i][i];
+                for (size_t k = i; k < order; k++) {
+                    copiedElements[j][k] += copiedElements[i][k] * multiplier;
+                }
+            }
+        }
+
+        // Finally multiply diagonal elements
+        for (size_t i = 0; i < order; i++) {
+            result *= copiedElements[i][i];
+        }
+
+        return result;
+    }
+
 };
 
 
