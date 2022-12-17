@@ -2,6 +2,7 @@
 #define CPP8V_SQUARESPARSEMATRIX_H
 #include "SparseMatrix.h"
 #include<cmath>
+#include<exception>
 
 template<class T>
 void printSparseMatrix(std::map<size_t, std::map<size_t, T>> elements) {
@@ -26,6 +27,7 @@ public:
         }
     }
 
+
     size_t getOrder() const {
         return this->getRows();
     }
@@ -37,8 +39,8 @@ public:
     std::map<size_t, std::map<size_t, double>> InvertibleMatrix() {
 
         double determinant = calculateDeterminant();
-        if (determinant == 0) {
-            //Irreversible matrix
+        if (determinant = 0) {
+            throw std::invalid_argument{"Irreversible matrix"};
         }
 
         std::map<size_t, std::map<size_t, double>> copiedElements = {};
@@ -67,9 +69,18 @@ public:
                     Minor[k].erase(j);
                 }
                 Minor.erase(i);
-                MatrixOfAlgebraicAdditions[i][j] = pow(-1,i+j)*(auxCalculateDeterminant(Minor));
+                //MatrixOfAlgebraicAdditions[i][j] = std::pow(-1,i+j)*(Minor.calculateDeterminant());
             }
-            printSparseMatrix(Minor);
+        }
+        //transposition
+        std::map<size_t, std::map<size_t, double>> TransposedMatrix = {};
+        for (size_t rowIndex = 0; rowIndex < this->getOrder(); rowIndex++) {
+            TransposedMatrix[rowIndex] = {};
+        }
+        for (size_t i = 0; i < this->getOrder(); i++) {
+            for (size_t j = 0; j < this->getOrder(); j++) {
+                TransposedMatrix[i][j] = MatrixOfAlgebraicAdditions[j][i];
+            }
         }
 
 
@@ -79,9 +90,34 @@ public:
                 MatrixOfAlgebraicAdditions[i][j] *= 1 / determinant;
             }
         }
+
         return MatrixOfAlgebraicAdditions;
+
+
+
+
+
     }
 
+    friend SquareSparseMatrix operator*(SquareSparseMatrix A, SquareSparseMatrix B ) {
+        if (A->getOrder() != B->getOrder()) {
+            throw std::invalid_argument("Orders of A and B aren't equal");
+        }
+        B = B.InvertibleMatrix();
+        SquareSparseMatrix C = {};
+        for (size_t rowIndex = 0; rowIndex < A->getOrder(); rowIndex++) {
+            C[rowIndex] = {};
+        }
+        for (size_t i = 0; i < A->getOrder(); i++) {
+            for (size_t j = 0; j < A->getOrder(); j++) {
+                for (size_t k = 0; k < A->getOrder(); k++) {
+                    C[i][j] = A[i][k]*B[k][j];
+                }
+            }
+        }
+        return C;
+
+    }
 private:
     static double auxCalculateDeterminant(const std::map<size_t, std::map<size_t, T>> & matrixElements) {
         // Create a copy of the matrix, but with double instead of T type
@@ -152,7 +188,6 @@ private:
 
         return result;
     }
-
 };
 
 
