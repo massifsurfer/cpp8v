@@ -40,29 +40,81 @@ public:
     }
 
 
-    friend SquareSparseMatrix operator*(SquareSparseMatrix A, SquareSparseMatrix B ) {
-        if (A->getOrder() != B->getOrder()) {
+    friend SquareSparseMatrix<double> operator/(SquareSparseMatrix & A, SquareSparseMatrix & B) {
+        if (A.getOrder() != B.getOrder()) {
             throw std::invalid_argument("Orders of A and B aren't equal");
         }
-        B = B.InvertibleMatrix();
-        SquareSparseMatrix C = {};
-        for (size_t rowIndex = 0; rowIndex < A->getOrder(); rowIndex++) {
-            C[rowIndex] = {};
-        }
-        for (size_t i = 0; i < A->getOrder(); i++) {
-            for (size_t j = 0; j < A->getOrder(); j++) {
-                for (size_t k = 0; k < A->getOrder(); k++) {
-                    C[i][j] = A[i][k]*B[k][j];
+        std::map<size_t, std::map<size_t, double>> originalElementsA = A.getElements();
+        std::map<size_t, std::map<size_t, double>> elementsA = {};
+
+        size_t order = A.getOrder();
+
+        for (size_t rowIndex = 0; rowIndex < order; rowIndex++) {
+            elementsA[rowIndex] = {};
+            for (size_t columnIndex = 0; columnIndex < order; columnIndex++) {
+                if (originalElementsA.at(rowIndex).find(columnIndex) == originalElementsA.at(rowIndex).end()) {
+                    elementsA[rowIndex][columnIndex] = 0;
+                }
+                else {
+                    elementsA[rowIndex][columnIndex] = (double) originalElementsA.at(rowIndex).at(columnIndex);
                 }
             }
         }
-        return C;
 
+        printSparseMatrix(elementsA);
+
+
+        std::map<size_t, std::map<size_t, double>> elementsInvertibleB = auxInvertibleMatrix(B.getElements());
+
+        printSparseMatrix(elementsInvertibleB);
+        std::map<size_t, std::map<size_t, double>> resultElements = {};
+        for (size_t rowIndex = 0; rowIndex < A.getOrder(); rowIndex++) {
+            resultElements[rowIndex] = {};
+        }
+        for (size_t i = 0; i < order; i++) {
+            for (size_t j = 0; j < order; j++) {
+                for (size_t k = 0; k < order; k++) {
+                    resultElements[i][j] += elementsA[i][k]*elementsInvertibleB[k][j];
+                }
+            }
+        }
+        return resultElements;
+    }
+
+
+private:
+    template<class K>
+    static std::map<size_t, std::map<size_t, double>> getDoubleCopy(const std::map<size_t, std::map<size_t, K>> & matrixElements) {
+
+        size_t rowsCount = matrixElements.size();
+        size_t columnsCount = 0;
+        for (auto row : matrixElements) {
+            columnsCount = std::max(row.second.size(), columnsCount);
+        }
+
+        if (rowsCount != columnsCount) {
+            throw std::invalid_argument("The matrix isn't square!");
+        }
+        size_t order = rowsCount;
+
+
+        std::map<size_t, std::map<size_t, double>> copiedElements = {};
+        for (size_t rowIndex = 0; rowIndex < order; rowIndex++) {
+            copiedElements[rowIndex] = {};
+            for (size_t columnIndex = 0; columnIndex < order; columnIndex++) {
+                if (matrixElements.at(rowIndex).find(columnIndex) == matrixElements.at(rowIndex).end()) {
+                    copiedElements[rowIndex][columnIndex] = 0;
+                }
+                else {
+                    copiedElements[rowIndex][columnIndex] = (double) matrixElements.at(rowIndex).at(columnIndex);
+                }
+            }
+        }
+        return copiedElements;
     }
 
 
 
-private:
     // This method is only used with dictionaries, not matrix objects!
     static std::map<size_t, std::map<size_t, double>> auxInvertibleMatrix(const std::map<size_t, std::map<size_t, T>> & matrixElements) {
 
@@ -132,7 +184,8 @@ private:
                     }
                     i++;
                 }
-                matrixOfAlgebraicAdditions[excludedRow][excludedColumn] = auxCalculateDeterminant(minor);
+                matrixOfAlgebraicAdditions[excludedRow][excludedColumn] = \
+                auxCalculateDeterminant(minor) * std::pow(-1, excludedRow + excludedColumn);
             }
         }
 
@@ -201,9 +254,9 @@ private:
                 }
             }
 
-            // Cycle for iterating over bottom rows, rows below i
+            // A cycle for iterating over bottom rows, rows below i
             for (size_t j = i + 1; j < order; j++) {
-                // Cycle for iterating over non-zero elements in a bottom row
+                // A cycle for iterating over non-zero elements in a bottom row
                 double multiplier = - copiedElements[j][i] / copiedElements[i][i];
                 for (size_t k = i; k < order; k++) {
                     copiedElements[j][k] += copiedElements[i][k] * multiplier;
@@ -218,6 +271,8 @@ private:
 
         return result;
     }
+
+
 
 
 };
