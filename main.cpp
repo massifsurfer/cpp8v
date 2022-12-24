@@ -17,7 +17,7 @@ int main() {
     SquareSparseMatrix<double> BS(B);
 
     //SquareSparseMatrix<double> C(1);
-    auto C = (AS / BS);
+    auto C = AS / BS;
     printSparseMatrix(C.getElements());
 
     return 0;
