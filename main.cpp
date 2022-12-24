@@ -16,9 +16,7 @@ int main() {
     B[1][1] = 2;
     SquareSparseMatrix<double> BS(B);
 
-    //SquareSparseMatrix<double> C(1);
-    auto C = AS / BS;
-    printSparseMatrix(C.getElements());
+    BS.solveEquation({1, 1});
 
     return 0;
 }

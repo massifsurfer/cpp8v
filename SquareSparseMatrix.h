@@ -54,7 +54,8 @@ public:
         printSparseMatrix(elementsA);
 
 
-        std::map<size_t, std::map<size_t, double>> elementsInvertibleB = auxInvertibleMatrix(B.getElements());
+        std::map<size_t, std::map<size_t, double>> elementsInvertibleB = \
+        auxInvertibleMatrix(B.getElements());
 
         printSparseMatrix(elementsInvertibleB);
         std::map<size_t, std::map<size_t, double>> resultElements = {};
@@ -71,11 +72,74 @@ public:
         return resultElements;
     }
 
+    std::vector<double> solveEquation( std::vector<double> FreeValues) {
+        double determinant = calculateDeterminant();
+        if (determinant == 0) {
+            throw std::invalid_argument{"Irreversible matrix"};
+        }
+        size_t order = this->getOrder();
+        std::map<size_t, std::map<size_t, double>> copiedElements = \
+        copyDoubleElements(this->getElements(), order);
+
+        size_t assistSize = order + 1;
+        for (size_t i = 0; i < order; i++) {
+            copiedElements[i][assistSize] = FreeValues[i];
+        }
+        // Here we make upper triangle matrix
+        for (size_t i = 0; i < order - 1; i++) {
+            // In this part we seek for a string with a non-zero first element. If there is a zero column, then the
+            // determinant equals zero
+            size_t nonzeroIndex = i;
+            // If the pivot in the current row equals zero then start seeking for non-zero lower in the same column
+            if (std::abs(copiedElements[nonzeroIndex][i]) < EPS) {
+                nonzeroIndex++;
+                while (nonzeroIndex < order) {
+                    if (std::abs(copiedElements[nonzeroIndex][i]) > EPS) {
+                        std::swap(copiedElements[i], copiedElements[nonzeroIndex]);
+                        break;
+                    }
+                    nonzeroIndex++;
+                }
+            }
+
+            // Cycle for iterating over bottom rows, rows below i
+            for (size_t j = i + 1; j < order; j++) {
+                // Cycle for iterating over non-zero elements in a bottom row
+                double multiplier = - copiedElements[j][i] / copiedElements[i][i];
+                for (size_t k = i; k <= order; k++) {
+                    copiedElements[j][k] += copiedElements[i][k] * multiplier;
+                }
+            }
+        }
+        // And here we make diagonal matrix
+        for (size_t i = order - 1; i > 0; i--) {
+            // Cycle for iterating over bottom rows, rows below i
+            for (int j = (int)i - 1; j >= 0; j--) {
+                // Cycle for iterating over non-zero elements in a bottom row
+                double multiplier = - copiedElements[j][i] / copiedElements[i][i];
+                copiedElements[j][i] += copiedElements[i][i] * multiplier;
+                copiedElements[j][order] += copiedElements[i][order] * multiplier;
+            }
+        }
+        printSparseMatrix(copiedElements);
+        //
+        for (size_t i = 0; i < this->getOrder(); i++) {
+            copiedElements[i][this->getOrder()+1] /= copiedElements[i][i];
+        }
+        //making vector of solves
+        std::vector<T> Solves;
+        for (size_t i = 0; i < this->getOrder(); i++) {
+            Solves.push_back(copiedElements[i][this->getOrder()+1]);
+        }
+        return Solves;
+    }
+
 
 private:
     // This method is only used with dictionaries, not matrix objects!
     template<class Q>
-    static std::map<size_t, std::map<size_t, double>> auxInvertibleMatrix(const std::map<size_t, std::map<size_t, Q>> & matrixElements) {
+    static std::map<size_t, std::map<size_t, double>> auxInvertibleMatrix\
+    (const std::map<size_t, std::map<size_t, Q>> & matrixElements) {
         // Check if it worth it
         double determinant = auxCalculateDeterminant(matrixElements);
         if (determinant == 0) {
@@ -96,66 +160,14 @@ private:
         std::map<size_t, std::map<size_t, double>> copiedElements = copyDoubleElements(matrixElements, order);
 
         // calculating Matrix Of Algebraic Additions
-        std::map<size_t, std::map<size_t, double>> matrixOfAlgebraicAdditions = auxCreateMatrixOfAlgebraicAdditions(copiedElements, order);
+        std::map<size_t, std::map<size_t, double>> matrixOfAlgebraicAdditions = \
+        auxCreateMatrixOfAlgebraicAdditions(copiedElements, order);
         // transposition
-        std::map<size_t, std::map<size_t, double>> TransposedMatrix = transpose(matrixOfAlgebraicAdditions, order);
+        std::map<size_t, std::map<size_t, double>> TransposedMatrix = \
+        transpose(matrixOfAlgebraicAdditions, order);
         // finally divide matrix by determinant and return the result
         divideMatrixByNumber(TransposedMatrix, determinant, order);
         return TransposedMatrix;
-    }
-
-    template<class Q>
-    std::vector<double> solveEquation( std::vector<double> FreeValues) {
-        double determinant = calculateDeterminant();
-        if (determinant == 0) {
-            throw std::invalid_argument{"Irreversible matrix"};
-        }
-
-        std::map<size_t, std::map<size_t, double>> copiedElements = \
-        copyDoubleElements(this->getElements(), this->getOrder());
-
-        size_t assistSize = this->getOrder() + 1;
-        for (size_t i = 0; i < this->getOrder(); i++) {
-            copiedElements[i][assistSize] = FreeValues[i];
-        }
-
-        for (size_t i = 0; i < this->getOrder() - 1; i++) {
-            // In this part we seek for a string with a non-zero first element. If there is a zero column, then the
-            // determinant equals zero
-            size_t nonzeroIndex = i;
-            // If the pivot in the current row equals zero then start seeking for non-zero lower in the same column
-            if (std::abs(copiedElements[nonzeroIndex][i]) < EPS) {
-                nonzeroIndex++;
-                while (nonzeroIndex < this->getOrder()) {
-                    if (std::abs(copiedElements[nonzeroIndex][i]) > EPS) {
-                        std::swap(copiedElements[i], copiedElements[nonzeroIndex]);
-                        break;
-                    }
-                    nonzeroIndex++;
-                }
-            }
-
-            // Cycle for iterating over bottom rows, rows below i
-            for (size_t j = i + 1; j < this->getOrder(); j++) {
-                // Cycle for iterating over non-zero elements in a bottom row
-                double multiplier = - copiedElements[j][i] / copiedElements[i][i];
-                for (size_t k = i; k < this->getOrder(); k++) {
-                    copiedElements[j][k] += copiedElements[i][k] * multiplier;
-                }
-            }
-        }
-
-        //
-        for (size_t i = 0; i < this->getOrder(); i++) {
-            copiedElements[i][this->getOrder()+1] /= copiedElements[i][i];
-        }
-
-        //making vector of solves
-        std::vector<T> Solves;
-        for (size_t i = 0; i < this->getOrder(); i++) {
-            Solves.push_back(copiedElements[i][this->getOrder()+1]);
-        }
-        return Solves;
     }
 
     template<class Q>
@@ -217,7 +229,8 @@ private:
 
     // A function for copying elements with their type changed to double
     template<class Q>
-    static std::map<size_t, std::map<size_t, double>> copyDoubleElements(const std::map<size_t, std::map<size_t, Q>> & matrixElements, const size_t order) {
+    static std::map<size_t, std::map<size_t, double>> copyDoubleElements\
+    (const std::map<size_t, std::map<size_t, Q>> & matrixElements, const size_t order) {
         std::map<size_t, std::map<size_t, double>> copiedElements = {};
 
         for (size_t rowIndex = 0; rowIndex < order; rowIndex++) {
@@ -283,7 +296,8 @@ private:
     // You mustn't skip zero elements in
     // matrixElements variable !
     template<class Q>
-    static std::map<size_t, std::map<size_t, Q>> transpose(const std::map<size_t, std::map<size_t, Q>> & matrixElements, const size_t order) {
+    static std::map<size_t, std::map<size_t, Q>> transpose\
+    (const std::map<size_t, std::map<size_t, Q>> & matrixElements, const size_t order) {
         std::map<size_t, std::map<size_t, Q>> TransposedMatrix = {};
         for (size_t rowIndex = 0; rowIndex < order; rowIndex++) {
             TransposedMatrix[rowIndex] = {};
