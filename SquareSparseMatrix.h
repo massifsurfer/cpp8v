@@ -3,6 +3,7 @@
 #include "SparseMatrix.h"
 #include<cmath>
 #include<exception>
+#include<ostream>
 
 template<class T>
 void printSparseMatrix(const std::map<size_t, std::map<size_t, T>> & elements) {
@@ -31,6 +32,23 @@ public:
         return this->getRows();
     }
 
+    friend std::ostream& operator<<(std::ostream& os, SquareSparseMatrix & A) {
+        std::map<size_t, std::map<size_t, double>> originalElementsA = A.getElements();
+        std::map<size_t, std::map<size_t, double>> elementsA = {};
+
+        size_t order = A.getOrder();
+
+        elementsA = copyDoubleElements(A.getElements(), order);
+        for (auto row : elementsA) {
+            for (auto el : row.second) {
+                os << el.second << "  ";
+            }
+            os << std::endl;
+        }
+        return os;
+
+    }
+
     double calculateDeterminant() {
         return this->auxCalculateDeterminant(this->getElements());
     }
@@ -51,13 +69,12 @@ public:
 
         elementsA = copyDoubleElements(A.getElements(), order);
 
-        printSparseMatrix(elementsA);
 
 
         std::map<size_t, std::map<size_t, double>> elementsInvertibleB = \
         auxInvertibleMatrix(B.getElements());
 
-        printSparseMatrix(elementsInvertibleB);
+
         std::map<size_t, std::map<size_t, double>> resultElements = {};
         for (size_t rowIndex = 0; rowIndex < A.getOrder(); rowIndex++) {
             resultElements[rowIndex] = {};
@@ -72,7 +89,7 @@ public:
         return resultElements;
     }
 
-    std::vector<double> solveEquation( std::vector<double> FreeValues) {
+    std::vector<double> solveEquation( std::vector<double> freeValues) {
         double determinant = calculateDeterminant();
         if (determinant == 0) {
             throw std::invalid_argument{"Irreversible matrix"};
@@ -81,9 +98,9 @@ public:
         std::map<size_t, std::map<size_t, double>> copiedElements = \
         copyDoubleElements(this->getElements(), order);
 
-        size_t assistSize = order + 1;
+        size_t assistSize = order;
         for (size_t i = 0; i < order; i++) {
-            copiedElements[i][assistSize] = FreeValues[i];
+            copiedElements[i][assistSize] = freeValues[i];
         }
         // Here we make upper triangle matrix
         for (size_t i = 0; i < order - 1; i++) {
@@ -121,18 +138,18 @@ public:
                 copiedElements[j][order] += copiedElements[i][order] * multiplier;
             }
         }
-        printSparseMatrix(copiedElements);
         //
-        for (size_t i = 0; i < this->getOrder(); i++) {
-            copiedElements[i][this->getOrder()+1] /= copiedElements[i][i];
+        for (size_t i = 0; i < order; i++) {
+            copiedElements[i][order] /= copiedElements[i][i];
         }
         //making vector of solves
         std::vector<T> Solves;
         for (size_t i = 0; i < this->getOrder(); i++) {
-            Solves.push_back(copiedElements[i][this->getOrder()+1]);
+            Solves.push_back(copiedElements[i][order]);
         }
         return Solves;
     }
+
 
 
 private:
