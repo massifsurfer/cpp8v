@@ -5,17 +5,6 @@
 #include<exception>
 #include<ostream>
 
-template<class T>
-void printSparseMatrix(const std::map<size_t, std::map<size_t, T>> & elements) {
-
-    for (auto row : elements) {
-        for (auto el : row.second) {
-            std::cout << el.second << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-
 double EPS = 1.e-10;
 
 template<class T>
